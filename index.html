@@ -12,7 +12,7 @@
   h1{font-size:20px;margin:0 0 14px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-  input,textarea,select{width:100%;padding:11px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
+  input,textarea{width:100%;padding:11px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
   textarea{min-height:120px;resize:vertical}
   .row{display:flex;gap:10px} .row>*{flex:1}
   .btn{appearance:none;border:1px solid var(--border);background:transparent;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
@@ -27,22 +27,13 @@
   <h1>Webhook Tester</h1>
 
   <div class="card">
-    <div class="row">
-      <div>
-        <label for="method">Method</label>
-        <select id="method">
-          <option selected>POST</option>
-          <option>PUT</option><option>PATCH</option>
-          <option>GET</option><option>DELETE</option>
-        </select>
-      </div>
-      <div style="flex:3">
-        <label for="endpoint">Endpoint URL</label>
-        <input id="endpoint" value="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" />
-      </div>
+    <div>
+      <label for="endpoint">Endpoint URL</label>
+      <input id="endpoint" value="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" />
+      <div class="small">Sends a <strong>POST</strong> as <code>application/x-www-form-urlencoded</code> (simple request, no CORS preflight).</div>
     </div>
 
-    <div class="row">
+    <div class="row" style="margin-top:10px">
       <div>
         <label for="name">Name</label>
         <input id="name" placeholder="Jane Doe" />
@@ -53,11 +44,11 @@
       </div>
     </div>
 
-    <div>
+    <div style="margin-top:10px">
       <label for="body">Additional fields (JSON, optional)</label>
       <textarea id="body" placeholder='{"note":"extra fields you want to include"}'></textarea>
       <div class="small">
-        Sends as <code>application/x-www-form-urlencoded</code> so values appear in webhook.site’s <strong>Form</strong> tab.
+        Extra JSON is merged into individual form fields so they appear in webhook.site’s <strong>Form</strong> tab.
       </div>
     </div>
 
@@ -100,23 +91,21 @@
     return p.toString();
   }
 
-  function buildCurlForm(method, url, obj) {
+  function buildCurlForm(url, obj) {
     const params = new URLSearchParams();
     Object.entries(obj || {}).forEach(([k,v]) => params.append(k, String(v)));
     const data = params.toString().replace(/'/g, `'\\''`);
     return [
-      'curl','-X',method, `'${url}'`,
+      'curl','-X','POST', `'${url}'`,
       '-H','\'Content-Type: application/x-www-form-urlencoded\'',
       '--data', `'${data}'`
     ].join(' ');
   }
 
   $('send').addEventListener('click', async () => {
-    const method = $('method').value;               // Recommend POST for forms
     const url    = $('endpoint').value.trim();
     const name   = $('name').value.trim();
     const email  = $('email').value.trim();
-
     if (!url) { alert('Please provide the endpoint URL'); return; }
 
     // Optional extras (JSON) → merged as individual form fields
@@ -124,16 +113,14 @@
     const payload = { name, email, ...extra };
 
     // Simple request: x-www-form-urlencoded body; DO NOT set custom headers to avoid CORS preflight
-    const bodyStr = (method !== 'GET') ? toFormUrlEncoded(payload) : undefined;
+    const bodyStr = toFormUrlEncoded(payload);
 
     const t0 = performance.now();
     let resp, ok=false, text='', size=0;
     try {
       resp = await fetch(url, {
-        method,
-        body: bodyStr
-        // No explicit headers: browser will send
-        // Content-Type: application/x-www-form-urlencoded;charset=UTF-8
+        method: 'POST',  // force POST to stay a "simple request"
+        body: bodyStr    // browser sets Content-Type: application/x-www-form-urlencoded;charset=UTF-8
       });
       ok = resp.ok;
       const buf = await resp.arrayBuffer(); size = buf.byteLength;
@@ -151,13 +138,12 @@
   });
 
   $('copyCurl').addEventListener('click', () => {
-    const method = $('method').value;
     const url    = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
     const name   = $('name').value.trim();
     const email  = $('email').value.trim();
     const extra  = parseJSONSafe($('body').value, {});
     const payload = { name, email, ...extra };
-    const curl = buildCurlForm(method, url, payload);
+    const curl = buildCurlForm(url, payload);
     navigator.clipboard.writeText(curl).then(()=> alert('cURL copied to clipboard'));
   });
 
