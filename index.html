@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Webhook Tester</title>
+<title>Webhook Tester (Form, No Preflight)</title>
 <style>
   :root{--bg:#0b0c10;--panel:#111316;--muted:#9aa3af;--text:#e5e7eb;--accent:#60a5fa;--border:#1f2937;--radius:14px}
   @media (prefers-color-scheme: light){:root{--bg:#f7f7fb;--panel:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb}}
@@ -24,13 +24,13 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Webhook Tester</h1>
+  <h1>Webhook Tester (Form Data • No Preflight)</h1>
 
   <div class="card">
     <div>
       <label for="endpoint">Endpoint URL</label>
       <input id="endpoint" value="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" />
-      <div class="small">Sends a <strong>POST</strong> as <code>application/x-www-form-urlencoded</code> (simple request, no CORS preflight).</div>
+      <div class="small">This sends a <strong>POST</strong> with <code>application/x-www-form-urlencoded</code> and no custom headers (so there’s no CORS preflight).</div>
     </div>
 
     <div class="row" style="margin-top:10px">
@@ -45,11 +45,9 @@
     </div>
 
     <div style="margin-top:10px">
-      <label for="body">Additional fields (JSON, optional)</label>
-      <textarea id="body" placeholder='{"note":"extra fields you want to include"}'></textarea>
-      <div class="small">
-        Extra JSON is merged into individual form fields so they appear in webhook.site’s <strong>Form</strong> tab.
-      </div>
+      <label for="extra">Extra fields (JSON, optional)</label>
+      <textarea id="extra" placeholder='{"note":"extra fields you want to include","source":"github-pages"}'></textarea>
+      <div class="small">Extra JSON is merged into individual form fields so they appear in webhook.site’s <strong>Form</strong> tab.</div>
     </div>
 
     <div class="row" style="margin-top:10px">
@@ -71,7 +69,7 @@
     <pre id="respBody">—</pre>
   </div>
 
-  <p class="small">Tip: open the webhook URL in another tab to watch your requests arrive in real time.</p>
+  <p class="small">Tip: open your webhook URL in another tab to watch your requests arrive in real time.</p>
 </div>
 
 <script>
@@ -108,19 +106,20 @@
     const email  = $('email').value.trim();
     if (!url) { alert('Please provide the endpoint URL'); return; }
 
-    // Optional extras (JSON) → merged as individual form fields
-    const extra = parseJSONSafe($('body').value, {});
-    const payload = { name, email, ...extra };
+    // Merge optional JSON extras into flat fields
+    const extras = parseJSONSafe($('extra').value, {});
+    const payload = { name, email, ...extras };
 
-    // Simple request: x-www-form-urlencoded body; DO NOT set custom headers to avoid CORS preflight
+    // Simple request: x-www-form-urlencoded body; DO NOT set custom headers → browser sets:
+    // Content-Type: application/x-www-form-urlencoded;charset=UTF-8
     const bodyStr = toFormUrlEncoded(payload);
 
     const t0 = performance.now();
     let resp, ok=false, text='', size=0;
     try {
       resp = await fetch(url, {
-        method: 'POST',  // force POST to stay a "simple request"
-        body: bodyStr    // browser sets Content-Type: application/x-www-form-urlencoded;charset=UTF-8
+        method: 'POST',   // keep POST to avoid preflight
+        body: bodyStr
       });
       ok = resp.ok;
       const buf = await resp.arrayBuffer(); size = buf.byteLength;
@@ -141,8 +140,8 @@
     const url    = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
     const name   = $('name').value.trim();
     const email  = $('email').value.trim();
-    const extra  = parseJSONSafe($('body').value, {});
-    const payload = { name, email, ...extra };
+    const extras = parseJSONSafe($('extra').value, {});
+    const payload = { name, email, ...extras };
     const curl = buildCurlForm(url, payload);
     navigator.clipboard.writeText(curl).then(()=> alert('cURL copied to clipboard'));
   });
@@ -150,7 +149,7 @@
   $('clear').addEventListener('click', () => {
     $('name').value = '';
     $('email').value = '';
-    $('body').value = '';
+    $('extra').value = '';
     $('status').textContent = '—';
     $('time').textContent = '—';
     $('size').textContent = '—';
