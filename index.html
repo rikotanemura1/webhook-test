@@ -2,18 +2,232 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>My GitHub Pages Site</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webhook Tester</title>
+  <meta name="description" content="A minimal, elegant webhook tester UI that runs on GitHub Pages." />
+  <style>
+    :root{
+      --bg: #0b0c10;
+      --panel: #111316;
+      --muted: #9aa3af;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+      --accent-2:#34d399;
+      --danger:#f87171;
+      --border: #1f2937;
+      --code: #0f172a;
+      --shadow: 0 15px 35px rgba(0,0,0,.25), 0 5px 15px rgba(0,0,0,.2);
+      --radius: 16px;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f7f7fb; --panel:#ffffff; --text:#0f172a; --muted:#6b7280;
+        --border:#e5e7eb; --code:#0b1220; --shadow: 0 10px 25px rgba(0,0,0,.08);
+      }
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial;
+      color:var(--text); background:radial-gradient(1200px 800px at 10% -10%, rgba(96,165,250,.15), transparent 60%),
+                         radial-gradient(800px 600px at 110% 10%, rgba(52,211,153,.12), transparent 60%),
+                         var(--bg);
+    }
+    .container{max-width:1100px; margin:0 auto; padding:24px}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;
+    }
+    .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(96,165,250,.16); color:var(--accent)}
+    .toolbar{display:flex; gap:10px; align-items:center}
+    .btn{
+      appearance:none; border:none; padding:10px 14px; border-radius:12px; background:var(--panel); color:var(--text);
+      box-shadow: var(--shadow); cursor:pointer; transition:.2s transform, .2s opacity;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn.primary{background:linear-gradient(135deg, var(--accent), #8b5cf6); color:white}
+    .btn.ghost{background:transparent; border:1px solid var(--border)}
+    .grid{display:grid; gap:16px; grid-template-columns: 1.2fr .8fr}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+    .card{
+      background:linear-gradient(0deg, rgba(255,255,255,.02), rgba(255,255,255,.02)) , var(--panel);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card h2{margin:0 0 12px 0; font-size:18px}
+    .card .body{padding:18px}
+    label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+    input, textarea, select{
+      width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--border);
+      background: transparent; color:var(--text); outline:none;
+    }
+    textarea{min-height:140px; resize:vertical}
+    .row{display:flex; gap:10px}
+    .row > *{flex:1}
+    .muted{color:var(--muted)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+    .codebox{
+      background: var(--code); color:#e2e8f0; border-radius:12px; padding:12px; overflow:auto; border:1px solid var(--border);
+      white-space: pre; max-height: 280px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border);
+      background:rgba(255,255,255,.02)
+    }
+    .status.ok{color:var(--accent-2)}
+    .status.err{color:var(--danger)}
+    details{border-top:1px dashed var(--border); padding-top:12px; margin-top:12px}
+    .hdr-row{display:flex; gap:10px; margin-bottom:8px}
+    .hdr-row input{padding:10px}
+    .small{font-size:12px}
+    .stack{display:flex; flex-direction:column; gap:12px}
+    footer{padding:24px; text-align:center; color:var(--muted)}
+  </style>
 </head>
 <body>
-  <h1>Hopefully the webhook picks this up!</h1>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12c0-4.418 3.582-8 8-8a8 8 0 1 1-7.446 10.86l3.09-1.236A4.5 4.5 0 1 0 12 7.5V4A8 8 0 0 0 4 12Z" fill="currentColor" opacity=".3"/>
+          <path d="M6 20c0-3.314 2.686-6 6-6 3.314 0 6 2.686 6 6h-2a4 4 0 1 0-8 0H6Z" fill="currentColor"/>
+        </svg>
+        <div>Webhook Tester <span class="badge">Pages</span></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="themeBtn" aria-label="Toggle theme">🌓 Theme</button>
+        <a class="btn" href="./" title="Refresh">↻</a>
+        <a class="btn" href="https://github.com/rikotanemura1/webhook-test" target="_blank" rel="noopener">Repo ↗</a>
+      </div>
+    </header>
 
-  <!-- Optional: webhook.site form -->
-  <form action="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" method="post">
-    <label>Name <input name="fullName" required></label><br>
-    <label>Email <input type="email" name="email" required></label><br>
-    <label>Message <textarea name="message"></textarea></label><br>
-    <button type="submit">Send</button>
-  </form>
-</body>
-</html>
+    <div class="grid">
+      <!-- LEFT: Request Builder -->
+      <section class="card">
+        <div class="body stack">
+          <h2>Request</h2>
+          <div class="row">
+            <div>
+              <label for="method">Method</label>
+              <select id="method">
+                <option>POST</option><option>PUT</option><option>PATCH</option>
+                <option>GET</option><option>DELETE</option>
+              </select>
+            </div>
+            <div style="flex:3">
+              <label for="endpoint">URL</label>
+              <input id="endpoint" placeholder="https://example.com/webhook" />
+            </div>
+          </div>
+
+          <div>
+            <label>Headers</label>
+            <div id="headers"></div>
+            <div class="hdr-row">
+              <input placeholder="Header name (e.g. Content-Type)" id="hdrName" />
+              <input placeholder="Header value (e.g. application/json)" id="hdrValue" />
+              <button class="btn" id="addHdr">Add</button>
+            </div>
+            <div class="small muted">Tip: common JSON header is <span class="mono">Content-Type: application/json</span></div>
+          </div>
+
+          <div>
+            <label for="body">Body</label>
+            <textarea id="body" class="mono" placeholder='{"event":"ping"}'></textarea>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" id="sendBtn">Send request</button>
+            <button class="btn" id="copyCurl">Copy as cURL</button>
+            <button class="btn ghost" id="clearForm">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Response -->
+      <section class="card">
+        <div class="body stack">
+          <h2>Response</h2>
+          <div class="row small">
+            <span class="pill">Status: <strong id="status" class="status">—</strong></span>
+            <span class="pill">Time: <strong id="time">—</strong></span>
+            <span class="pill">Size: <strong id="size">—</strong></span>
+          </div>
+
+          <div>
+            <label>Headers</label>
+            <pre id="respHeaders" class="codebox small" aria-live="polite"></pre>
+          </div>
+          <div>
+            <label>Body</label>
+            <pre id="respBody" class="codebox mono" aria-live="polite"></pre>
+          </div>
+
+          <details>
+            <summary>Recent Requests</summary>
+            <div id="history" class="stack small"></div>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <span class="small">Built with vanilla HTML/CSS/JS. No tracking, no external dependencies.</span>
+    </footer>
+  </div>
+
+  <script>
+    // ——— THEME ———
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn?.addEventListener('click', () => {
+      const cur = document.documentElement.dataset.theme || 'auto';
+      const next = cur === 'dark' ? 'light' : cur === 'light' ? 'auto' : 'dark';
+      document.documentElement.dataset.theme = next;
+      themeBtn.textContent = next === 'dark' ? '🌙 Dark' : next === 'light' ? '☀️ Light' : '🌓 Auto';
+    });
+
+    // ——— HEADERS UI ———
+    const headersList = document.getElementById('headers');
+    const hdrName = document.getElementById('hdrName');
+    const hdrValue = document.getElementById('hdrValue');
+    const addHdr = document.getElementById('addHdr');
+    const state = { headers: [] };
+
+    function renderHeaders(){
+      headersList.innerHTML = '';
+      state.headers.forEach((h, i) => {
+        const row = document.createElement('div');
+        row.className = 'hdr-row';
+        const a = document.createElement('input'); a.value = h.name;
+        const b = document.createElement('input'); b.value = h.value;
+        const rm = document.createElement('button'); rm.className='btn ghost'; rm.textContent='✕';
+        rm.addEventListener('click', ()=>{ state.headers.splice(i,1); renderHeaders(); });
+        a.addEventListener('input', e => h.name = e.target.value);
+        b.addEventListener('input', e => h.value = e.target.value);
+        row.append(a,b,rm); headersList.append(row);
+      });
+    }
+    addHdr.addEventListener('click', ()=>{
+      if(!hdrName.value.trim()) return;
+      state.headers.push({name: hdrName.value.trim(), value: hdrValue.value});
+      hdrName.value=''; hdrValue.value=''; renderHeaders();
+    });
+
+    // ——— HISTORY ———
+    const HISTORY_KEY = 'webhook_tester_history_v1';
+    function saveHistory(entry){
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      arr.unshift(entry);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0,20)));
+      renderHistory();
+    }
+    function renderHistory(){
+      const history = document.getElementById('history');
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      history.innerHTML = '';
+      arr.forEach((h, idx)=>{
+        const item = document.createElement('div');
+        item.innerHTML = `
+          <div class="
