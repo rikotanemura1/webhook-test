@@ -1,161 +1,170 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Webhook Tester (Form, No Preflight)</title>
-<style>
-  :root{--bg:#0b0c10;--panel:#111316;--muted:#9aa3af;--text:#e5e7eb;--accent:#60a5fa;--border:#1f2937;--radius:14px}
-  @media (prefers-color-scheme: light){:root{--bg:#f7f7fb;--panel:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb}}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-  .wrap{max-width:900px;margin:auto;padding:20px}
-  h1{font-size:20px;margin:0 0 14px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
-  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-  input,textarea{width:100%;padding:11px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
-  textarea{min-height:120px;resize:vertical}
-  .row{display:flex;gap:10px} .row>*{flex:1}
-  .btn{appearance:none;border:1px solid var(--border);background:transparent;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
-  .btn.primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;color:#fff}
-  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px;margin-right:8px}
-  pre{white-space:pre-wrap;word-break:break-word;border:1px solid var(--border);border-radius:12px;padding:10px;background:#0f172a;color:#e2e8f0}
-  .small{font-size:12px;color:var(--muted)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Webhook Form (No Preflight • Shows as Form)</title>
+  <style>
+    :root{--bg:#0b0c10;--panel:#111316;--muted:#9aa3af;--text:#e5e7eb;--accent:#60a5fa;--border:#1f2937;--radius:14px}
+    @media (prefers-color-scheme: light){:root{--bg:#f7f7fb;--panel:#fff;--text:#0f172a;--muted:#6b7280;--border:#e5e7eb}}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    .wrap{max-width:900px;margin:auto;padding:20px}
+    h1{font-size:20px;margin:0 0 14px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input,textarea{width:100%;padding:11px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
+    textarea{min-height:120px;resize:vertical}
+    .row{display:flex;gap:10px} .row>*{flex:1}
+    .btn{appearance:none;border:1px solid var(--border);background:transparent;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;color:#fff}
+    .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px;margin-right:8px}
+    pre{white-space:pre-wrap;word-break:break-word;border:1px solid var(--border);border-radius:12px;padding:10px;background:#0f172a;color:#e2e8f0}
+    .small{font-size:12px;color:var(--muted)}
+    iframe{display:none}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Webhook Tester (Form Data • No Preflight)</h1>
+  <div class="wrap">
+    <h1>Webhook Form (Form Data • No Preflight)</h1>
 
-  <div class="card">
-    <div>
-      <label for="endpoint">Endpoint URL</label>
-      <input id="endpoint" value="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" />
-      <div class="small">This sends a <strong>POST</strong> with <code>application/x-www-form-urlencoded</code> and no custom headers (so there’s no CORS preflight).</div>
+    <div class="card">
+      <!-- Hidden iframe to receive the form submission so the page doesn't navigate -->
+      <iframe name="sink" id="sink"></iframe>
+
+      <!-- Real HTML form => browser sends application/x-www-form-urlencoded automatically -->
+      <form id="hookForm" action="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" method="POST" target="sink">
+        <div>
+          <label for="endpoint">Endpoint URL</label>
+          <input id="endpoint" value="https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7" />
+          <div class="small">Submitting this form sends a <b>POST</b> with <code>application/x-www-form-urlencoded</code> (no CORS preflight).</div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label for="name">Name</label>
+            <input id="name" name="name" placeholder="Jane Doe" />
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="jane@example.com" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label for="extra">Extra fields (JSON, optional)</label>
+          <textarea id="extra" placeholder='{"note":"hello","source":"github-pages"}'></textarea>
+          <div class="small">
+            Extra JSON is split into individual <em>form</em> fields before submit so they appear in webhook.site’s <b>Form</b> tab.
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn primary" type="submit">Send</button>
+          <button class="btn" type="button" id="copyCurl">Copy cURL</button>
+          <button class="btn" type="button" id="clear">Clear</button>
+        </div>
+
+        <!-- Container where we’ll inject hidden inputs for extra JSON keys -->
+        <div id="hiddenExtras"></div>
+      </form>
     </div>
 
-    <div class="row" style="margin-top:10px">
-      <div>
-        <label for="name">Name</label>
-        <input id="name" placeholder="Jane Doe" />
+    <div class="card">
+      <div style="margin-bottom:8px">
+        <span class="pill">Status: <strong id="status">—</strong></span>
+        <span class="pill">When: <strong id="time">—</strong></span>
+        <span class="pill">Note: <strong id="note">Awaiting send…</strong></span>
       </div>
-      <div>
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="jane@example.com" />
-      </div>
+      <label>What you’ll see on webhook.site</label>
+      <pre id="explain">After you click “Send”, open your webhook inbox in another tab. You should see a POST with fields listed under the “Form” tab.</pre>
     </div>
 
-    <div style="margin-top:10px">
-      <label for="extra">Extra fields (JSON, optional)</label>
-      <textarea id="extra" placeholder='{"note":"extra fields you want to include","source":"github-pages"}'></textarea>
-      <div class="small">Extra JSON is merged into individual form fields so they appear in webhook.site’s <strong>Form</strong> tab.</div>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <button class="btn primary" id="send">Send</button>
-      <button class="btn" id="copyCurl">Copy cURL</button>
-      <button class="btn" id="clear">Clear</button>
-    </div>
+    <p class="small">Troubleshooting: if you still see only OPTIONS, your browser/devtools is showing a cached preflight. Refresh the webhook page and look for the latest POST entry.</p>
   </div>
 
-  <div class="card">
-    <div style="margin-bottom:8px">
-      <span class="pill">Status: <strong id="status">—</strong></span>
-      <span class="pill">Time: <strong id="time">—</strong></span>
-      <span class="pill">Size: <strong id="size">—</strong></span>
-    </div>
-    <label>Response Headers</label>
-    <pre id="respHeaders">—</pre>
-    <label>Response Body</label>
-    <pre id="respBody">—</pre>
-  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
 
-  <p class="small">Tip: open your webhook URL in another tab to watch your requests arrive in real time.</p>
-</div>
+    // Safely parse JSON
+    function parseJSONSafe(txt) {
+      if (!txt?.trim()) return {};
+      try { return JSON.parse(txt); } catch { return {}; }
+    }
 
-<script>
-  const $ = (id) => document.getElementById(id);
-
-  function parseJSONSafe(txt, fallback) {
-    if (!txt?.trim()) return fallback;
-    try { return JSON.parse(txt); } catch { return fallback; }
-  }
-
-  // Build x-www-form-urlencoded body
-  function toFormUrlEncoded(obj) {
-    const p = new URLSearchParams();
-    Object.entries(obj || {}).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) p.append(k, String(v));
-    });
-    return p.toString();
-  }
-
-  function buildCurlForm(url, obj) {
-    const params = new URLSearchParams();
-    Object.entries(obj || {}).forEach(([k,v]) => params.append(k, String(v)));
-    const data = params.toString().replace(/'/g, `'\\''`);
-    return [
-      'curl','-X','POST', `'${url}'`,
-      '-H','\'Content-Type: application/x-www-form-urlencoded\'',
-      '--data', `'${data}'`
-    ].join(' ');
-  }
-
-  $('send').addEventListener('click', async () => {
-    const url    = $('endpoint').value.trim();
-    const name   = $('name').value.trim();
-    const email  = $('email').value.trim();
-    if (!url) { alert('Please provide the endpoint URL'); return; }
-
-    // Merge optional JSON extras into flat fields
-    const extras = parseJSONSafe($('extra').value, {});
-    const payload = { name, email, ...extras };
-
-    // Simple request: x-www-form-urlencoded body; DO NOT set custom headers → browser sets:
-    // Content-Type: application/x-www-form-urlencoded;charset=UTF-8
-    const bodyStr = toFormUrlEncoded(payload);
-
-    const t0 = performance.now();
-    let resp, ok=false, text='', size=0;
-    try {
-      resp = await fetch(url, {
-        method: 'POST',   // keep POST to avoid preflight
-        body: bodyStr
+    // Build x-www-form-urlencoded string (for cURL preview only)
+    function toFormUrlEncoded(obj) {
+      const p = new URLSearchParams();
+      Object.entries(obj || {}).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) p.append(k, String(v));
       });
-      ok = resp.ok;
-      const buf = await resp.arrayBuffer(); size = buf.byteLength;
-      text = new TextDecoder().decode(buf);
-    } catch (e) { text = String(e); }
-    const ms = Math.round(performance.now() - t0);
+      return p.toString();
+    }
 
-    $('status').textContent = resp ? `${resp.status} ${resp.statusText}` : 'NETWORK ERROR';
-    $('time').textContent = `${ms} ms`;
-    $('size').textContent = `${size}`;
-    const hdrs = [];
-    if (resp) resp.headers.forEach((v,k)=> hdrs.push(`${k}: ${v}`));
-    $('respHeaders').textContent = hdrs.join('\n') || '—';
-    $('respBody').textContent = text || '—';
-  });
+    // Build cURL with form encoding
+    function buildCurl(url, obj) {
+      const data = toFormUrlEncoded(obj).replace(/'/g, `'\\''`);
+      return [
+        'curl','-X','POST', `'${url}'`,
+        '-H','\'Content-Type: application/x-www-form-urlencoded\'',
+        '--data', `'${data}'`
+      ].join(' ');
+    }
 
-  $('copyCurl').addEventListener('click', () => {
-    const url    = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
-    const name   = $('name').value.trim();
-    const email  = $('email').value.trim();
-    const extras = parseJSONSafe($('extra').value, {});
-    const payload = { name, email, ...extras };
-    const curl = buildCurlForm(url, payload);
-    navigator.clipboard.writeText(curl).then(()=> alert('cURL copied to clipboard'));
-  });
+    // Before submit: update action to current endpoint & expand extra JSON into hidden inputs
+    $('hookForm').addEventListener('submit', (e) => {
+      const url = $('endpoint').value.trim();
+      if (!url) { e.preventDefault(); alert('Provide endpoint URL'); return; }
 
-  $('clear').addEventListener('click', () => {
-    $('name').value = '';
-    $('email').value = '';
-    $('extra').value = '';
-    $('status').textContent = '—';
-    $('time').textContent = '—';
-    $('size').textContent = '—';
-    $('respHeaders').textContent = '—';
-    $('respBody').textContent = '—';
-  });
-</script>
+      // Update the form's action dynamically
+      e.target.action = url;
+
+      // Clear previous hidden extras
+      $('hiddenExtras').innerHTML = '';
+
+      // Turn extra JSON into individual hidden fields
+      const extra = parseJSONSafe($('extra').value);
+      Object.entries(extra).forEach(([k, v]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = String(v);
+        $('hiddenExtras').appendChild(input);
+      });
+
+      // Update status immediately (since we can't read cross-origin response)
+      $('status').textContent = 'Sent';
+      $('time').textContent = new Date().toLocaleString();
+      $('note').textContent = 'Submitted via HTML form to hidden iframe (response is cross-origin and not readable).';
+      $('explain').textContent =
+        'Form fields submitted:\n' +
+        JSON.stringify({ name: $('name').value, email: $('email').value, ...extra }, null, 2) +
+        '\n\nOpen your webhook inbox and check the newest POST entry under the “Form” tab.';
+    });
+
+    // Copy cURL for the same form submission
+    $('copyCurl').addEventListener('click', () => {
+      const url = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
+      const base = {
+        name: $('name').value.trim(),
+        email: $('email').value.trim(),
+        ...parseJSONSafe($('extra').value)
+      };
+      const curl = buildCurl(url, base);
+      navigator.clipboard.writeText(curl).then(() => alert('cURL copied to clipboard'));
+    });
+
+    // Clear fields
+    $('clear').addEventListener('click', () => {
+      $('name').value = '';
+      $('email').value = '';
+      $('extra').value = '';
+      $('status').textContent = '—';
+      $('time').textContent = '—';
+      $('note').textContent = 'Awaiting send…';
+      $('explain').textContent = 'After you click “Send”, open your webhook inbox in another tab. You should see a POST with fields listed under the “Form” tab.';
+      $('hiddenExtras').innerHTML = '';
+    });
+  </script>
 </body>
 </html>
