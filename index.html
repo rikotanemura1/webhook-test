@@ -31,7 +31,8 @@
       <div>
         <label for="method">Method</label>
         <select id="method">
-          <option>POST</option><option>PUT</option><option>PATCH</option>
+          <option selected>POST</option>
+          <option>PUT</option><option>PATCH</option>
           <option>GET</option><option>DELETE</option>
         </select>
       </div>
@@ -53,15 +54,11 @@
     </div>
 
     <div>
-      <label for="body">Additional JSON (optional)</label>
+      <label for="body">Additional fields (JSON, optional)</label>
       <textarea id="body" placeholder='{"note":"extra fields you want to include"}'></textarea>
-      <div class="small">If provided, this JSON will be merged with the Name/Email fields.</div>
-    </div>
-
-    <div>
-      <label for="headers">Headers (JSON, optional)</label>
-      <input id="headers" class="mono" placeholder='{"X-Custom":"123"}' />
-      <div class="small">Content-Type will be forced to <code>application/json</code> for non-GET methods.</div>
+      <div class="small">
+        Sends as <code>application/x-www-form-urlencoded</code> so values appear in webhook.site’s <strong>Form</strong> tab.
+      </div>
     </div>
 
     <div class="row" style="margin-top:10px">
@@ -83,7 +80,7 @@
     <pre id="respBody">—</pre>
   </div>
 
-  <p class="small">Tip: Open the webhook URL in another tab to watch requests arrive in real time.</p>
+  <p class="small">Tip: open the webhook URL in another tab to watch your requests arrive in real time.</p>
 </div>
 
 <script>
@@ -94,47 +91,50 @@
     try { return JSON.parse(txt); } catch { return fallback; }
   }
 
-  function mergePayload(name, email, extraObj) {
-    const base = {};
-    if (name) base.name = name;
-    if (email) base.email = email;
-    if (extraObj && typeof extraObj === 'object') {
-      return { ...base, ...extraObj };
-    }
-    return base;
+  // Build x-www-form-urlencoded body
+  function toFormUrlEncoded(obj) {
+    const p = new URLSearchParams();
+    Object.entries(obj || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) p.append(k, String(v));
+    });
+    return p.toString();
   }
 
-  function buildHeaders(raw, forceJson) {
-    const h = Object.fromEntries(Object.entries(parseJSONSafe(raw, {})).map(([k,v]) => [k, String(v)]));
-    if (forceJson) h['Content-Type'] = 'application/json';
-    return h;
-  }
-
-  function buildCurl(method, url, headers, bodyStr) {
-    const parts = ['curl','-X',method, `'${url}'`];
-    Object.entries(headers).forEach(([k,v]) => { parts.push('-H', `'${k}: ${v}'`); });
-    if (bodyStr && method !== 'GET') parts.push('--data', `'${bodyStr.replace(/'/g, `'\\''`)}'`);
-    return parts.join(' ');
+  function buildCurlForm(method, url, obj) {
+    const params = new URLSearchParams();
+    Object.entries(obj || {}).forEach(([k,v]) => params.append(k, String(v)));
+    const data = params.toString().replace(/'/g, `'\\''`);
+    return [
+      'curl','-X',method, `'${url}'`,
+      '-H','\'Content-Type: application/x-www-form-urlencoded\'',
+      '--data', `'${data}'`
+    ].join(' ');
   }
 
   $('send').addEventListener('click', async () => {
-    const method = $('method').value;
-    const url = $('endpoint').value.trim();
-    const name = $('name').value.trim();
-    const email = $('email').value.trim();
-    const extra = parseJSONSafe($('body').value, null);
+    const method = $('method').value;               // Recommend POST for forms
+    const url    = $('endpoint').value.trim();
+    const name   = $('name').value.trim();
+    const email  = $('email').value.trim();
 
     if (!url) { alert('Please provide the endpoint URL'); return; }
 
-    const willSendBody = method !== 'GET';
-    const payloadObj = willSendBody ? mergePayload(name, email, extra) : null;
-    const bodyStr = willSendBody ? JSON.stringify(payloadObj ?? {}) : undefined;
-    const headers = buildHeaders($('headers').value, willSendBody);
+    // Optional extras (JSON) → merged as individual form fields
+    const extra = parseJSONSafe($('body').value, {});
+    const payload = { name, email, ...extra };
+
+    // Simple request: x-www-form-urlencoded body; DO NOT set custom headers to avoid CORS preflight
+    const bodyStr = (method !== 'GET') ? toFormUrlEncoded(payload) : undefined;
 
     const t0 = performance.now();
     let resp, ok=false, text='', size=0;
     try {
-      resp = await fetch(url, { method, headers, body: bodyStr });
+      resp = await fetch(url, {
+        method,
+        body: bodyStr
+        // No explicit headers: browser will send
+        // Content-Type: application/x-www-form-urlencoded;charset=UTF-8
+      });
       ok = resp.ok;
       const buf = await resp.arrayBuffer(); size = buf.byteLength;
       text = new TextDecoder().decode(buf);
@@ -152,15 +152,12 @@
 
   $('copyCurl').addEventListener('click', () => {
     const method = $('method').value;
-    const url = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
-    const name = $('name').value.trim();
-    const email = $('email').value.trim();
-    const extra = parseJSONSafe($('body').value, null);
-    const willSendBody = method !== 'GET';
-    const payloadObj = willSendBody ? mergePayload(name, email, extra) : null;
-    const bodyStr = willSendBody ? JSON.stringify(payloadObj ?? {}) : '';
-    const headers = buildHeaders($('headers').value, willSendBody);
-    const curl = buildCurl(method, url, headers, bodyStr);
+    const url    = $('endpoint').value.trim() || 'https://webhook.site/efcf00a8-841c-4a52-99fa-5acecda707a7';
+    const name   = $('name').value.trim();
+    const email  = $('email').value.trim();
+    const extra  = parseJSONSafe($('body').value, {});
+    const payload = { name, email, ...extra };
+    const curl = buildCurlForm(method, url, payload);
     navigator.clipboard.writeText(curl).then(()=> alert('cURL copied to clipboard'));
   });
 
@@ -168,7 +165,6 @@
     $('name').value = '';
     $('email').value = '';
     $('body').value = '';
-    $('headers').value = '';
     $('status').textContent = '—';
     $('time').textContent = '—';
     $('size').textContent = '—';
